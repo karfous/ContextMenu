@@ -2,11 +2,26 @@ class Shape {}
 class Rectangle {}
 class Circle {}
 
+// save some models to local storage
+// testing only
+const myShapes = [
+  {
+    type: "rectangle",
+    width: "50px",
+    height: "50px",
+    position: { top: "70px", left: "10px" },
+  },
+  {
+    type: "circle",
+    radius: "70px",
+    position: { top: "170px", left: "150px" },
+  },
+];
+localStorage.setItem("myShapes", JSON.stringify(myShapes));
 class ShapeView {
   constructor(model) {
     this.model = model;
     this.el = document.createElement("div");
-    this.el.className = "position-absolute bg-warning border border-1 rounded";
   }
 
   render() {}
@@ -15,48 +30,59 @@ class ShapeView {
     this.el.style.top = this.position.top;
     this.el.style.left = this.position.left;
   }
+
+  appendView(element) {
+    element.appendChild(this.el);
+  }
 }
 class RectangleView extends ShapeView {
   constructor(model) {
     super(model);
+    this.el.className = "position-absolute bg-warning border border-1 rounded";
     this.width = this.model.width;
     this.height = this.model.height;
     this.position = this.model.position;
   }
-  render() {
+  render(element) {
     this.el.style.height = this.height;
     this.el.style.width = this.width;
     this.setElPosition();
-    const container = document.getElementById("app-container"); // TODO
-    container.appendChild(this.el);
+    this.appendView(element);
   }
 }
 class CircleView extends ShapeView {
   constructor(model) {
     super(model);
+    this.el.className =
+      "position-absolute bg-warning border border-1 rounded-circle";
     this.radius = this.model.radius;
     this.position = this.model.position;
   }
 
-  render() {
+  render(element) {
     this.el.style.height = this.radius;
     this.el.style.width = this.radius;
     this.el.classList.add("rounded-circle");
     this.setElPosition();
-    const container = document.getElementById("app-container"); // TODO
-    container.appendChild(this.el);
+    this.appendView(element);
   }
 }
 class ContextMenuView {}
 
 class AppCollection {
-  constructor() {}
-  getShapesFromLocalStorage() {}
+  constructor() {
+    this.models = this.getShapesFromLocalStorage();
+  }
+  getShapesFromLocalStorage() {
+    const models = JSON.parse(localStorage.getItem("myShapes"));
+    return models ? models : [];
+  }
 }
 class CollectionView {
   constructor() {
     this.el = document.createElement("div");
     this.collection = this.createCollection(); // this will save all shape models
+    this.childViews = this.getChildViews();
 
     this.el.className =
       "container position-relative px-1 bg-light border border-1 rounded";
@@ -70,10 +96,33 @@ class CollectionView {
 
   render(id) {
     // this should render main view
-    // what about views for all of the shapes in collection?
+    // and also all the childViews
+    this.childViews.forEach((view) => {
+      view.render(this.el);
+    });
     const container = document.getElementById(id);
     container.appendChild(this.el);
   }
+
+  getChildViews() {
+    const allViews = [];
+    this.collection.models.forEach((model) => {
+      const View = this.getShapeView(model);
+      allViews.push(new View(model));
+    });
+    return allViews;
+  }
+
+  getShapeView(model) {
+    const shapeViewsList = {
+      rectangle: RectangleView,
+      circle: CircleView,
+    };
+
+    return shapeViewsList[model.type];
+  }
+
+  renderChild(model, view) {}
 
   /* this will take care of context menu appearence 
   - decide wheter you click in the blank space
@@ -87,6 +136,7 @@ class CollectionView {
       //show some options to manipulate with object
       alert("Object");
     }
+    console.log(this);
   }
 
   isClickedOnObject(e) {
@@ -102,14 +152,14 @@ class CollectionView {
 const appView = new CollectionView();
 appView.render("app");
 
-const rect = new RectangleView({
-  width: "50px",
-  height: "50px",
-  position: { top: "70px", left: "10px" },
-});
-rect.render();
-const circ = new CircleView({
-  radius: "70px",
-  position: { top: "170px", left: "150px" },
-});
-circ.render();
+// const rect = new RectangleView({
+//   width: "50px",
+//   height: "50px",
+//   position: { top: "70px", left: "10px" },
+// });
+// rect.render();
+// const circ = new CircleView({
+//   radius: "70px",
+//   position: { top: "170px", left: "150px" },
+// });
+// circ.render();
