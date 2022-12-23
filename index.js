@@ -31,6 +31,10 @@ class Shape {
     return this.get("position");
   }
 
+  getType() {
+    return this.get("type");
+  }
+
   getSaveFormat() {
     return this.attributes;
   }
@@ -64,7 +68,7 @@ class ShapeView {
     this.model = model;
     this.el = document.createElement("div");
     this.el.id = model.id;
-    this.el.setAttribute("type", model.type);
+    this.el.setAttribute("type", model.getType());
   }
 
   render() {}
@@ -169,7 +173,7 @@ class AppView {
   constructor() {
     this.el = document.createElement("div");
     this.collection = this._createAppCollection(); // this will contain all shape models
-    this.childViews = this._createAppViews();
+    // this.childViews = this._createAppViews();
 
     this._createMainHtmlElement();
     this._setEventListeners();
@@ -178,12 +182,23 @@ class AppView {
   render(id) {
     const container = document.getElementById(id);
     container.appendChild(this.el);
+
+    const fragment = new DocumentFragment();
+
+    this.collection.models.forEach((model) => {
+      const View = this._getShapeView(model);
+      const view = new View(model);
+      view.render(fragment);
+      // fragment.appendChild(view.el)
+    });
+    this.el.appendChild(fragment);
     // this should render main view
     // and also all the childViews
-    this.childViews.forEach((view) => {
-      view.render(this.el);
-    });
+    // this.childViews.forEach((view) => {
+    //   view.render(this.el);
+    // });
   }
+
   _createMainHtmlElement() {
     this.el.className =
       "container position-relative px-1 bg-light border border-1 rounded";
@@ -196,14 +211,7 @@ class AppView {
       this._handleContextMenuClick.bind(this)
     );
   }
-  _createAppViews() {
-    const allViews = [];
-    this.collection.models.forEach((model) => {
-      const View = this._getShapeView(model);
-      allViews.push(new View(model));
-    });
-    return allViews;
-  }
+
   _getShapeView(model) {
     const shapeViewsList = {
       rectangle: RectangleView,
@@ -222,6 +230,7 @@ class AppView {
     // console.log(this);
     if (this._clickedOnEmptySpace(e)) {
       alert("Empty space");
+
       // show simple context menu
       return;
     }
