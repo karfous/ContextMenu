@@ -2,26 +2,12 @@ class Shape {}
 class Rectangle {}
 class Circle {}
 
-// save some models to local storage
-// testing only
-const myShapes = [
-  {
-    type: "rectangle",
-    width: "50px",
-    height: "50px",
-    position: { top: "70px", left: "10px" },
-  },
-  {
-    type: "circle",
-    radius: "70px",
-    position: { top: "170px", left: "150px" },
-  },
-];
-localStorage.setItem("myShapes", JSON.stringify(myShapes));
 class ShapeView {
   constructor(model) {
     this.model = model;
     this.el = document.createElement("div");
+    this.el.id = model.id;
+    this.el.setAttribute("type", model.type);
   }
 
   render() {}
@@ -71,13 +57,55 @@ class ContextMenuView {}
 
 class AppCollection {
   constructor() {
-    this.models = this.getShapesFromLocalStorage();
+    this.models = [];
+
+    this.getShapesFromLocalStorage();
+    // only for testing
+    this.getSampleShapesData();
+    this.setShapeIds(); // will help me identify a shape in AppView
+
+    this.saveShapesToLocalStorage();
   }
+
+  setShapeIds() {
+    let index = 1;
+    this.models.forEach((shape) => {
+      shape.id = index;
+      index++;
+    });
+  }
+
   getShapesFromLocalStorage() {
     const models = JSON.parse(localStorage.getItem("myShapes"));
-    return models ? models : [];
+    if (models) this.models = models;
+  }
+
+  getSampleShapesData() {
+    if (!this.models.length)
+      this.models = [
+        {
+          type: "rectangle",
+          width: "50px",
+          height: "50px",
+          position: { top: "70px", left: "10px" },
+        },
+        {
+          type: "circle",
+          radius: "70px",
+          position: { top: "170px", left: "150px" },
+        },
+      ];
+  }
+
+  saveShapesToLocalStorage() {
+    localStorage.setItem("myShapes", JSON.stringify(this.models));
   }
   addNewShape() {}
+  findModel(id) {
+    return this.models.find((model) => {
+      return model.id == id;
+    });
+  }
 
   getShapeConstructor(shapeDescriptor) {
     const shapeModelList = {};
@@ -137,7 +165,7 @@ class AppView {
   _handleContextMenuClick(e) {
     e.preventDefault();
     console.log(e);
-    console.log(this);
+    // console.log(this);
     if (this._clickedOnEmptySpace(e)) {
       alert("Empty space");
       // show simple context menu
@@ -145,6 +173,7 @@ class AppView {
     }
 
     alert("Clicked on an object");
+    console.log(this.collection.findModel(e.target.id));
     //show context menu to manipulate with object
   }
 
