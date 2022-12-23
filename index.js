@@ -1,6 +1,63 @@
-class Shape {}
-class Rectangle {}
-class Circle {}
+//testing only
+
+const testShapes = [
+  {
+    type: "rectangle",
+    dimensions: { width: "50px", height: "50px" },
+    position: { top: "70px", left: "10px" },
+  },
+  {
+    type: "circle",
+    dimensions: { radius: "70px" },
+    position: { top: "170px", left: "200px" },
+  },
+];
+localStorage.setItem("myShapes", JSON.stringify(testShapes));
+
+class Shape {
+  constructor(template) {
+    this.attributes = { type: "" };
+    this.set("position", template.position);
+    this.set("dimensions", template.dimensions);
+  }
+  set(attribute, value) {
+    this.attributes[attribute] = value;
+  }
+  get(attribute) {
+    return this.attributes[attribute];
+  }
+
+  getPosition() {
+    return this.get("position");
+  }
+
+  getSaveFormat() {
+    return this.attributes;
+  }
+}
+class Rectangle extends Shape {
+  constructor(template) {
+    super(template);
+    this.set("type", "rectangle");
+  }
+
+  getHeight() {
+    return this.get("dimensions").height;
+  }
+  getWidth() {
+    return this.get("dimensions").width;
+  }
+}
+class Circle extends Shape {
+  constructor(template) {
+    super(template);
+    this.set("type", "circle");
+  }
+
+  getRadius() {
+    return this.get("dimensions").radius;
+  }
+}
 
 class ShapeView {
   constructor(model) {
@@ -13,8 +70,8 @@ class ShapeView {
   render() {}
 
   setElPosition() {
-    this.el.style.top = this.position.top;
-    this.el.style.left = this.position.left;
+    this.el.style.top = this.model.getPosition().top;
+    this.el.style.left = this.model.getPosition().left;
   }
 
   appendView(element) {
@@ -25,13 +82,10 @@ class RectangleView extends ShapeView {
   constructor(model) {
     super(model);
     this.el.className = "position-absolute bg-warning border border-1 rounded";
-    this.width = this.model.width;
-    this.height = this.model.height;
-    this.position = this.model.position;
   }
   render(element) {
-    this.el.style.height = this.height;
-    this.el.style.width = this.width;
+    this.el.style.height = this.model.getHeight();
+    this.el.style.width = this.model.getWidth();
     this.setElPosition();
     this.appendView(element);
   }
@@ -41,13 +95,11 @@ class CircleView extends ShapeView {
     super(model);
     this.el.className =
       "position-absolute bg-warning border border-1 rounded-circle";
-    this.radius = this.model.radius;
-    this.position = this.model.position;
   }
 
   render(element) {
-    this.el.style.height = this.radius;
-    this.el.style.width = this.radius;
+    this.el.style.height = this.model.getRadius();
+    this.el.style.width = this.model.getRadius();
     this.el.classList.add("rounded-circle");
     this.setElPosition();
     this.appendView(element);
@@ -60,8 +112,6 @@ class AppCollection {
     this.models = [];
 
     this.getShapesFromLocalStorage();
-    // only for testing
-    this.getSampleShapesData();
     this.setShapeIds(); // will help me identify a shape in AppView
 
     this.saveShapesToLocalStorage();
@@ -76,29 +126,33 @@ class AppCollection {
   }
 
   getShapesFromLocalStorage() {
-    const models = JSON.parse(localStorage.getItem("myShapes"));
-    if (models) this.models = models;
+    const templateModels = JSON.parse(localStorage.getItem("myShapes"));
+    //
+    if (templateModels) {
+      templateModels.forEach((template) => {
+        const ClassConstructor = this.getClassConstructor(template.type);
+        this.models.push(new ClassConstructor(template));
+      });
+      //  this.models = models;
+      // create real objects
+    }
   }
 
-  getSampleShapesData() {
-    if (!this.models.length)
-      this.models = [
-        {
-          type: "rectangle",
-          width: "50px",
-          height: "50px",
-          position: { top: "70px", left: "10px" },
-        },
-        {
-          type: "circle",
-          radius: "70px",
-          position: { top: "170px", left: "150px" },
-        },
-      ];
+  getClassConstructor(type) {
+    const classConstructor = {
+      rectangle: Rectangle,
+      circle: Circle,
+    };
+    return classConstructor[type];
   }
 
   saveShapesToLocalStorage() {
-    localStorage.setItem("myShapes", JSON.stringify(this.models));
+    // save only attributes needed for recreating the objects
+    const models = [];
+    this.models.forEach((model) => {
+      models.push(model.getSaveFormat());
+    });
+    localStorage.setItem("myShapes", JSON.stringify(models));
   }
   addNewShape() {}
   findModel(id) {
@@ -156,7 +210,7 @@ class AppView {
       circle: CircleView,
     };
 
-    return shapeViewsList[model.type];
+    return shapeViewsList[model.get("type")];
   }
 
   /* this will take care of context menu appearence 
