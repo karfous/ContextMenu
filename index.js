@@ -77,43 +77,52 @@ class AppCollection {
     const models = JSON.parse(localStorage.getItem("myShapes"));
     return models ? models : [];
   }
+  addNewShape() {}
+
+  getShapeConstructor(shapeDescriptor) {
+    const shapeModelList = {};
+  }
 }
-class CollectionView {
+class AppView {
   constructor() {
     this.el = document.createElement("div");
-    this.collection = this.createCollection(); // this will save all shape models
-    this.childViews = this.getChildViews();
+    this.collection = this._createAppCollection(); // this will contain all shape models
+    this.childViews = this._createAppViews();
 
-    this.el.className =
-      "container position-relative px-1 bg-light border border-1 rounded";
-    this.el.id = "app-container";
-    this.el.style.height = "500px";
-    this.el.addEventListener(
-      "contextmenu",
-      this.handleContextMenuClick.bind(this)
-    );
+    this._createMainHtmlElement();
+    this._setEventListeners();
   }
 
   render(id) {
+    const container = document.getElementById(id);
+    container.appendChild(this.el);
     // this should render main view
     // and also all the childViews
     this.childViews.forEach((view) => {
       view.render(this.el);
     });
-    const container = document.getElementById(id);
-    container.appendChild(this.el);
   }
-
-  getChildViews() {
+  _createMainHtmlElement() {
+    this.el.className =
+      "container position-relative px-1 bg-light border border-1 rounded";
+    this.el.id = "app-container";
+    this.el.style.height = "500px";
+  }
+  _setEventListeners() {
+    this.el.addEventListener(
+      "contextmenu",
+      this._handleContextMenuClick.bind(this)
+    );
+  }
+  _createAppViews() {
     const allViews = [];
     this.collection.models.forEach((model) => {
-      const View = this.getShapeView(model);
+      const View = this._getShapeView(model);
       allViews.push(new View(model));
     });
     return allViews;
   }
-
-  getShapeView(model) {
+  _getShapeView(model) {
     const shapeViewsList = {
       rectangle: RectangleView,
       circle: CircleView,
@@ -122,44 +131,32 @@ class CollectionView {
     return shapeViewsList[model.type];
   }
 
-  renderChild(model, view) {}
-
   /* this will take care of context menu appearence 
   - decide wheter you click in the blank space
   - or you click on a shape */
-  handleContextMenuClick(e) {
+  _handleContextMenuClick(e) {
     e.preventDefault();
-    if (this.isClickedOnObject(e)) {
-      // show simple context menu
-      alert("Area");
-    } else {
-      //show some options to manipulate with object
-      alert("Object");
-    }
+    console.log(e);
     console.log(this);
+    if (this._clickedOnEmptySpace(e)) {
+      alert("Empty space");
+      // show simple context menu
+      return;
+    }
+
+    alert("Clicked on an object");
+    //show context menu to manipulate with object
   }
 
-  isClickedOnObject(e) {
+  _clickedOnEmptySpace(e) {
     return e.target == this.el;
   }
 
-  createCollection() {
+  _createAppCollection() {
     // factory function that can be overriden
     return new AppCollection();
   }
 }
 
-const appView = new CollectionView();
+const appView = new AppView();
 appView.render("app");
-
-// const rect = new RectangleView({
-//   width: "50px",
-//   height: "50px",
-//   position: { top: "70px", left: "10px" },
-// });
-// rect.render();
-// const circ = new CircleView({
-//   radius: "70px",
-//   position: { top: "170px", left: "150px" },
-// });
-// circ.render();
