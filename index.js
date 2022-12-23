@@ -12,7 +12,7 @@ const testShapes = [
     position: { top: "170px", left: "200px" },
   },
 ];
-localStorage.setItem("myShapes", JSON.stringify(testShapes));
+// localStorage.setItem("myShapes", JSON.stringify(testShapes));
 
 class Shape {
   constructor(template) {
@@ -118,7 +118,7 @@ class AppCollection {
     this.getShapesFromLocalStorage();
     this.setShapeIds(); // will help me identify a shape in AppView
 
-    this.saveShapesToLocalStorage();
+    // this.saveShapesToLocalStorage();
   }
 
   setShapeIds() {
@@ -142,6 +142,19 @@ class AppCollection {
     }
   }
 
+  addShape(template) {
+    const ClassConstructor = this.getClassConstructor(template.type);
+    this.models.push(new ClassConstructor(template));
+    this.setShapeIds();
+    this.saveShapesToLocalStorage();
+  }
+
+  deleteShape(id) {
+    this.models = this.models.filter((model) => model.id != id);
+    this.setShapeIds();
+    this.saveShapesToLocalStorage();
+  }
+
   getClassConstructor(type) {
     const classConstructor = {
       rectangle: Rectangle,
@@ -158,7 +171,7 @@ class AppCollection {
     });
     localStorage.setItem("myShapes", JSON.stringify(models));
   }
-  addNewShape() {}
+
   findModel(id) {
     return this.models.find((model) => {
       return model.id == id;
@@ -182,21 +195,19 @@ class AppView {
   render(id) {
     const container = document.getElementById(id);
     container.appendChild(this.el);
+    this.createViews();
+  }
 
+  createViews() {
+    this.el.innerHTML = "";
     const fragment = new DocumentFragment();
 
     this.collection.models.forEach((model) => {
       const View = this._getShapeView(model);
       const view = new View(model);
       view.render(fragment);
-      // fragment.appendChild(view.el)
     });
     this.el.appendChild(fragment);
-    // this should render main view
-    // and also all the childViews
-    // this.childViews.forEach((view) => {
-    //   view.render(this.el);
-    // });
   }
 
   _createMainHtmlElement() {
@@ -226,17 +237,22 @@ class AppView {
   - or you click on a shape */
   _handleContextMenuClick(e) {
     e.preventDefault();
-    console.log(e);
+
     // console.log(this);
     if (this._clickedOnEmptySpace(e)) {
-      alert("Empty space");
-
+      // TODO hardcoded shape
+      this.collection.addShape({
+        type: "rectangle",
+        dimensions: { width: "50px", height: "50px" },
+        position: { top: `${e.offsetY}px`, left: `${e.offsetX}px` },
+      });
+      this.createViews();
       // show simple context menu
       return;
     }
-
-    alert("Clicked on an object");
-    console.log(this.collection.findModel(e.target.id));
+    // clicking an object will erase the shape
+    this.collection.deleteShape(e.target.id);
+    this.createViews();
     //show context menu to manipulate with object
   }
 
