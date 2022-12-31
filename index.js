@@ -109,7 +109,64 @@ class CircleView extends ShapeView {
     this.appendView(element);
   }
 }
-class ContextMenuView {}
+class ContextMenuView {
+  constructor(e, commandList) {
+    this.modal = new bootstrap.Modal(
+      document.getElementById("modalTemplate"),
+      {}
+    );
+
+    this.commandList = commandList;
+
+    this.menu = this.modal._dialog;
+
+    // add context menu to body relatively to cursor
+    this.menu.style.position = "absolute";
+    this.menu.style.top = `${e.clientY}px`;
+    this.menu.style.left = `${e.clientX}px`;
+    this.menu.innerHTML = "";
+
+    this.createContextMenuList();
+  }
+
+  createContextMenuList() {
+    // <div id="context-menu-list" class="list-group d-inline-block w-auto"></div>
+    const modalContent = document.createElement("div");
+    modalContent.className = "modal-content";
+
+    const divList = document.createElement("div");
+    divList.id = "context-menu-list";
+    divList.className = "list-group d-inline-block w-auto";
+
+    this.createAnchors(divList);
+    modalContent.appendChild(divList);
+    this.menu.appendChild(modalContent);
+  }
+
+  createAnchors(target) {
+    const fragment = new DocumentFragment();
+    this.commandList.forEach((command) => {
+      {
+        /* <a href="#" class="empty list-group-item list-group-item-action">New object</a> */
+      }
+      const anchor = document.createElement("a");
+      anchor.className = "list-group-item list-group-item-action";
+      anchor.textContent = command.text;
+      anchor.href = "#";
+
+      anchor.addEventListener("click", () => {
+        command.fn.call(command.self, command.parameters);
+        this.modal.hide();
+      });
+      fragment.appendChild(anchor);
+    });
+    target.appendChild(fragment);
+  }
+
+  render() {
+    this.modal.show();
+  }
+}
 
 class AppCollection {
   constructor() {
@@ -151,6 +208,12 @@ class AppCollection {
 
   deleteShape(id) {
     this.models = this.models.filter((model) => model.id != id);
+    this.setShapeIds();
+    this.saveShapesToLocalStorage();
+  }
+
+  clear() {
+    this.models = [];
     this.setShapeIds();
     this.saveShapesToLocalStorage();
   }
@@ -237,23 +300,52 @@ class AppView {
   - or you click on a shape */
   _handleContextMenuClick(e) {
     e.preventDefault();
+    const self = this;
+    let commandList = [
+      {
+        text: "New object",
+        fn: self.collection.addShape,
+        parameters: {
+          type: "rectangle",
+          dimensions: { width: "50px", height: "50px" },
+          position: { top: `${e.offsetY}px`, left: `${e.offsetX}px` },
+        },
+        self: self.collection,
+        type: "empty",
+      },
+      {
+        text: "Delete all",
+        fn: self.collection.clear,
+        parameters: "",
+        self: self.collection,
+        type: "empty",
+      },
+      {
+        text: "Delete shape",
+        fn: self.collection.deleteShape,
+        parameters: e.target.id,
+        self: self.collection,
+        type: "object",
+      },
+      {
+        text: "Duplicate shape",
+        fn: self.collection.addShape,
+        parameters: e.target.id, //
+        self: self.collection,
+        type: "object",
+      },
+    ];
 
-    // console.log(this);
     if (this._clickedOnEmptySpace(e)) {
-      // TODO hardcoded shape
-      this.collection.addShape({
-        type: "rectangle",
-        dimensions: { width: "50px", height: "50px" },
-        position: { top: `${e.offsetY}px`, left: `${e.offsetX}px` },
-      });
-      this.createViews();
-      // show simple context menu
-      return;
+      commandList = commandList.filter((command) => command.type == "empty");
+    } else {
+      commandList = commandList.filter((command) => command.type == "object");
     }
-    // clicking an object will erase the shape
-    this.collection.deleteShape(e.target.id);
+
+    const modalMenu = new ContextMenuView(e, commandList);
+    modalMenu.render();
+
     this.createViews();
-    //show context menu to manipulate with object
   }
 
   _clickedOnEmptySpace(e) {
