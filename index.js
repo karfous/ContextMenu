@@ -1,19 +1,3 @@
-//testing only
-
-const testShapes = [
-  {
-    type: "rectangle",
-    dimensions: { width: "50px", height: "50px" },
-    position: { top: "70px", left: "10px" },
-  },
-  {
-    type: "circle",
-    dimensions: { radius: "70px" },
-    position: { top: "170px", left: "200px" },
-  },
-];
-// localStorage.setItem("myShapes", JSON.stringify(testShapes));
-
 class Shape {
   constructor(template) {
     this.attributes = { type: "" };
@@ -62,7 +46,6 @@ class Circle extends Shape {
     return this.get("dimensions").radius;
   }
 }
-
 class ShapeView {
   constructor(model) {
     this.model = model;
@@ -111,10 +94,7 @@ class CircleView extends ShapeView {
 }
 class ContextMenuView {
   constructor(e, commandList) {
-    this.modal = new bootstrap.Modal(
-      document.getElementById("modalTemplate"),
-      {}
-    );
+    this.modal = new bootstrap.Modal(document.getElementById("modalTemplate"));
 
     this.commandList = commandList;
 
@@ -130,10 +110,11 @@ class ContextMenuView {
   }
 
   createContextMenuList() {
-    // <div id="context-menu-list" class="list-group d-inline-block w-auto"></div>
+    // create a main part of the content
     const modalContent = document.createElement("div");
     modalContent.className = "modal-content";
 
+    // create list of commands
     const divList = document.createElement("div");
     divList.id = "context-menu-list";
     divList.className = "list-group d-inline-block w-auto";
@@ -142,22 +123,24 @@ class ContextMenuView {
     modalContent.appendChild(divList);
     this.menu.appendChild(modalContent);
   }
-
+  createAnchor(command) {
+    const anchor = document.createElement("a");
+    anchor.className = "list-group-item list-group-item-action";
+    anchor.textContent = command.text;
+    anchor.href = "#";
+    anchor.addEventListener("click", () => {
+      // TODO not sure about this solution
+      // every commands has a function that is called, but I need to bind this  and command parameters here
+      // command.self could be changed if using arrow functions?
+      command.fn.call(command.self, command.parameters);
+      this.modal.hide(); // hide a menu after the command is clicked
+    });
+    return anchor;
+  }
   createAnchors(target) {
     const fragment = new DocumentFragment();
     this.commandList.forEach((command) => {
-      {
-        /* <a href="#" class="empty list-group-item list-group-item-action">New object</a> */
-      }
-      const anchor = document.createElement("a");
-      anchor.className = "list-group-item list-group-item-action";
-      anchor.textContent = command.text;
-      anchor.href = "#";
-
-      anchor.addEventListener("click", () => {
-        command.fn.call(command.self, command.parameters);
-        this.modal.hide();
-      });
+      const anchor = this.createAnchor(command);
       fragment.appendChild(anchor);
     });
     target.appendChild(fragment);
@@ -167,7 +150,6 @@ class ContextMenuView {
     this.modal.show();
   }
 }
-
 class AppCollection {
   constructor() {
     this.models = [];
@@ -241,8 +223,9 @@ class AppCollection {
     });
   }
 
-  getShapeConstructor(shapeDescriptor) {
-    const shapeModelList = {};
+  forEach(fn) {
+    // fn should be arrow function to preserve this context
+    this.models.forEach(fn);
   }
 }
 class AppView {
@@ -262,10 +245,11 @@ class AppView {
   }
 
   createViews() {
-    this.el.innerHTML = "";
-    const fragment = new DocumentFragment();
-
-    this.collection.models.forEach((model) => {
+    this.el.innerHTML = ""; // clear container before creating new views
+    const fragment = new DocumentFragment(); // use fragment and insert it at once to the container
+    // forEach method above the collection which is an object not an array
+    // implemented in order to avoid this.collection.models.forEach calling (...models...)
+    this.collection.forEach((model) => {
       const View = this._getShapeView(model);
       const view = new View(model);
       view.render(fragment);
@@ -285,7 +269,7 @@ class AppView {
       this._handleContextMenuClick.bind(this)
     );
   }
-
+  // TODO JaKa - is this the rigth way how to get ShapeViews?
   _getShapeView(model) {
     const shapeViewsList = {
       rectangle: RectangleView,
@@ -301,6 +285,8 @@ class AppView {
   _handleContextMenuClick(e) {
     e.preventDefault();
     const self = this;
+    // TODO commandList is terrible like this, what is the better way?
+    // default command list needs to be edited every time a new command is addede or changed
     let commandList = [
       {
         text: "New object",
@@ -335,7 +321,7 @@ class AppView {
         type: "object",
       },
     ];
-
+    // changing commandList according to the click event
     if (this._clickedOnEmptySpace(e)) {
       commandList = commandList.filter((command) => command.type == "empty");
     } else {
