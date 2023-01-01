@@ -5,6 +5,8 @@ The architecture was inspired by Backbone framework https://backbonejs.org/
 
 Try to focus on Events module of Backbone which allows different object to listen to events.
 
+See it live on https://codepen.io/karfous/pen/JjBKXdz
+
 ## Technology
 - HTML
 - CSS (Bootstrap)
