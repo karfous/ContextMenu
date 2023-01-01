@@ -1,3 +1,4 @@
+// Models
 class Shape {
   constructor(template) {
     this.attributes = { type: "" };
@@ -46,6 +47,86 @@ class Circle extends Shape {
     return this.get("dimensions").radius;
   }
 }
+class AppCollection {
+  constructor() {
+    this.models = [];
+
+    this.getShapesFromLocalStorage();
+    this.setShapeIds(); // will help me identify a shape in AppView
+
+    // this.saveShapesToLocalStorage();
+  }
+
+  setShapeIds() {
+    let index = 1;
+    this.models.forEach((shape) => {
+      shape.id = index;
+      index++;
+    });
+  }
+
+  getShapesFromLocalStorage() {
+    const templateModels = JSON.parse(localStorage.getItem("myShapes"));
+    //
+    if (templateModels) {
+      templateModels.forEach((template) => {
+        const ClassConstructor = this.getClassConstructor(template.type);
+        this.models.push(new ClassConstructor(template));
+      });
+      //  this.models = models;
+      // create real objects
+    }
+  }
+
+  addShape(template) {
+    const ClassConstructor = this.getClassConstructor(template.type);
+    this.models.push(new ClassConstructor(template));
+    this.setShapeIds();
+    this.saveShapesToLocalStorage();
+  }
+
+  deleteShape(id) {
+    this.models = this.models.filter((model) => model.id != id);
+    this.setShapeIds();
+    this.saveShapesToLocalStorage();
+  }
+
+  clear() {
+    this.models = [];
+    this.setShapeIds();
+    this.saveShapesToLocalStorage();
+  }
+
+  getClassConstructor(type) {
+    const classConstructor = {
+      rectangle: Rectangle,
+      circle: Circle,
+    };
+    return classConstructor[type];
+  }
+
+  saveShapesToLocalStorage() {
+    // save only attributes needed for recreating the objects
+    const models = [];
+    this.models.forEach((model) => {
+      models.push(model.getSaveFormat());
+    });
+    localStorage.setItem("myShapes", JSON.stringify(models));
+  }
+
+  findModel(id) {
+    return this.models.find((model) => {
+      return model.id == id;
+    });
+  }
+
+  forEach(fn) {
+    // fn should be arrow function to preserve this context
+    this.models.forEach(fn);
+  }
+}
+
+// Views
 class ShapeView {
   constructor(model) {
     this.model = model;
@@ -148,84 +229,6 @@ class ContextMenuView {
 
   render() {
     this.modal.show();
-  }
-}
-class AppCollection {
-  constructor() {
-    this.models = [];
-
-    this.getShapesFromLocalStorage();
-    this.setShapeIds(); // will help me identify a shape in AppView
-
-    // this.saveShapesToLocalStorage();
-  }
-
-  setShapeIds() {
-    let index = 1;
-    this.models.forEach((shape) => {
-      shape.id = index;
-      index++;
-    });
-  }
-
-  getShapesFromLocalStorage() {
-    const templateModels = JSON.parse(localStorage.getItem("myShapes"));
-    //
-    if (templateModels) {
-      templateModels.forEach((template) => {
-        const ClassConstructor = this.getClassConstructor(template.type);
-        this.models.push(new ClassConstructor(template));
-      });
-      //  this.models = models;
-      // create real objects
-    }
-  }
-
-  addShape(template) {
-    const ClassConstructor = this.getClassConstructor(template.type);
-    this.models.push(new ClassConstructor(template));
-    this.setShapeIds();
-    this.saveShapesToLocalStorage();
-  }
-
-  deleteShape(id) {
-    this.models = this.models.filter((model) => model.id != id);
-    this.setShapeIds();
-    this.saveShapesToLocalStorage();
-  }
-
-  clear() {
-    this.models = [];
-    this.setShapeIds();
-    this.saveShapesToLocalStorage();
-  }
-
-  getClassConstructor(type) {
-    const classConstructor = {
-      rectangle: Rectangle,
-      circle: Circle,
-    };
-    return classConstructor[type];
-  }
-
-  saveShapesToLocalStorage() {
-    // save only attributes needed for recreating the objects
-    const models = [];
-    this.models.forEach((model) => {
-      models.push(model.getSaveFormat());
-    });
-    localStorage.setItem("myShapes", JSON.stringify(models));
-  }
-
-  findModel(id) {
-    return this.models.find((model) => {
-      return model.id == id;
-    });
-  }
-
-  forEach(fn) {
-    // fn should be arrow function to preserve this context
-    this.models.forEach(fn);
   }
 }
 class AppView {
@@ -344,5 +347,6 @@ class AppView {
   }
 }
 
+// app
 const appView = new AppView();
 appView.render("app");
